@@ -1,0 +1,120 @@
+DriverManager - 연동준비용 객체
+Connection - 연결용객체
+Statement - 쿼리문 실행시켜주는 용도의 객체
+ResultSet = SELECT 문실행 결과를 돌려주는 객체
+
+JDBC 코딩 절차 (전체적인 흐름)
+1. DriverManager 얻기
+2. Connection 객체 얻기
+(Connection 객체 생성 == 연결완료)
+3. Statement 객체 얻기
+4. Statement 객체를 통해 쿼리문 실행
+5. 쿼리문 실행 결과 받기
+(SELECT 문의 경우는 ResultSet 타입)
+6. 자원반납 (역순으로)
+
+VO (Value Object)
+ * DB 테이블의 "한 행" 에 대한 데이터를
+ * 담을 수 있는 저장용 클래스
+ * 매칭시킬 DB 테이블의 각 컬럼을 필드로써 유사하게 구성!!
+ * 
+ * > 유사용어
+ * DTO (Data Transfer Object)
+ * 같은뜻임!!
+ * 
+ * * VO 작성 조건
+ * 1) 반드시 캡슐화 적용
+ * 2) 기본생성자 및 매개변수 생성자를 작성할 것
+ * 3) 모든필드에 대한 setter / getter 메소드를 작성할 것
+
+Dao (Data Access Object)
+ * Controller 를 통해서 호출된 기능을 수행하기 위해
+ * 데이터가 담겨있는 외부매체인 DB 에 직접적으로 접근한 후
+ * 해당 SQL 문을 실행하고 결과를 받아주는 부분
+ * > 즉, JDBC 과정을 처리하는 부분
+
+ JDBC 용 객체
+ * - Connection : DB 의 연결정보를 담고 있는 객체
+ * 				  Connection 객체가 생성되는 순간
+ * 				  해당 DB 와의 연결이 이루어짐
+ * - (Prepared)Statement : 해당 DB 에 SQL문을 전달하고
+ * 							실행한 후 결과를 받아내는 객체 
+ * - ResultSet : 내가 만일 실행한 SQL문이 SELECT 문일 경우
+ * 				 조회된 결과들이 담겨있는 객체
+ * * JDBC 처리 순서
+ * 1) JDBC Driver 등록 
+ * : 해당 DBMS 가 제공하고 있는 클래스 등록
+ * 2) Connection 객체 생성
+ * : 접속하고자 하는 DB 정보를 입력해서 DB 에 접속하면서 생성
+ *   (Connection 객체 생성 == DB 에 접속)
+ * 3) Statement 객체 생성
+ * : Connection 객체를 이용해서 생성
+ * 4) SQL 문 전달하면서 실행
+ * : Statement 객체를 이용해서 SQL 문 실행
+ *   - SELECT 문의 경우 : executeQuery 메소드를 이용해서 실행
+ *   - DML문의 경우 : executeUpdate 메소드를 이용해서 실행
+ *   (INSERT, UPDATE, DELETE 문)
+ * 5) 결과 받기
+ *  - SELECT 문의 경우 : ResultSet 객체 
+ *  (조회된 데이터들이 담겨있음) 로 받기
+ *  => 6_1)
+ *  - DML 문(INSERT, UPDATE, DELETE 문)의 경우 :  int (처리된 행의 갯수)로 받기 
+ *  => 6_2)
+ * 6_1) ResultSet 에 담겨있는 조회된 데이터들을
+ *      하나씩 뽑아서 VO 객체에 담기
+ * 6_2) 트랜잭션 처리 (성공 시 COMMIT, 실패 시 ROLLBACK)
+ * 7) 다 쓴 JDBC 용 자원들을 반납 (close)
+ * : 단, 생성 순서의 역순으로 반납하기
+ * 8) Controller 로 결과 반환
+ *   - SELECT 문의 경우 : 6_1) 에서 만들어진 결과
+ *   - DML 문(INSERT, UPDATE, DELETE 문)의 경우 : int (처리된 행의 갯수)
+ *        		
+ * ** Statement 특징 : 완성된 SQL문을 실행!!
+
+// 1) JDBC Driver 등록
+			// [ 표현법 ]
+			// Class.forName("oracle.jdbc.driver.OracleDriver");
+			// > ojdbc6.jar 에서제공하고있는
+			//   oracle.jdbc.driver 패키지의
+			//   OracleDriver 클래스를 등록해서 가져다 쓰겠다는 의미
+			// > 풀클래스명에 오타가 있거나, ojdbc6.jar 연동이 안되어있다면
+			//   ClassNotFoundException 예외 발생
+
+// 2) Connection 객체 생성
+			// DB 접속과 관련된 정보들을 넘기면서 생성
+			// [ 표현법 ]
+			// Connection conn = DriverManager.getConnection(url주소, 계정명, 비번);
+			// Connection 객체가 생성되는 순간 해당 DB 에 접속됨!
+			Connection conn = DriverManager.getConnection("jdbc:oracle:thin:@localhost:1521:xe","JDBC","JDBC");
+			
+			// 이 시점 부터는 DB 에 접속이 된 것
+			// 3) Statement 객체 생성
+			// Connection 객체를 통해서 생성해야함
+			// [ 표현법 ]
+			// Statement stmt = conn.createStatement();
+			Statement stmt = conn.createStatement();
+			
+			// 4, 5) DB 에 완성된 SQL 문을 전달하면서 실행 후
+			//       결과 받기
+			//  - 실행할 SQL 문 종류 : INSERT 문
+			//  - 호출해야할 메소드 : executeUpdate
+			// [ 표현법 ]
+			// int result = stmt.executeUpdate(sql문);
+			// ResultSet rset = stmt.executeQuery(sql문);
+			result = stmt.executeUpdate(sql);
+			// > insert 가 제대로 되었다면 1
+			//   insert 가 제대로 되지 않았다면 0
+			
+			// 6_2 트랜잭션 처리
+			// 성공이면 COMMIT, 실패면 ROLLBACK
+
+Controller : View 를 통해서 요청한 기능을 처리하는 담당
+ *  			 해당 메소드로 전달된 데이터들을 "가공처리" 한후 
+ * 				 Dao 메소드 호출 시 전달
+ * 				 Dao 로 부터 반환받은 결과에 따라 사용자가 보게 될
+ * 				 View (응답화면) 을 결정
+ * 
+ * Controller 메소드 코드 flow
+ * 1) 매개변수로 전달받은 전달값들을 하나의 VO 객체에 담기 (가공)
+ * 2) Dao 단의 메소드를 호출하면서 VO 객체 전달하면서 결과 받기
+ * 3) Dao 로 부터 전달받은 결과에 따른 응답 화면을 결정
